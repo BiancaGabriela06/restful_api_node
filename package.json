@@ -1,0 +1,22 @@
+{
+  "name": "restful_api_node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Asavoaei Bianca Gabriela",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "morgan": "^1.10.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.21"
+  }
+}
