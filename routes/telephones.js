@@ -1,6 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const database = require('../database');
+const bodyParser = require('body-parser');
+const joi = require('joi');
+
+router.use(bodyParser.urlencoded({extended : false}));
+router.use(bodyParser.json());
+
+const telephoneObject = joi.object(
+    {
+        PhoneName: joi.required(),
+        PhoneBrand: joi.required(),
+        PhonePrice: joi.required(),
+        PhoneDesc: joi.optional()
+});
 
 router.get('/', (req, res) => {
     database.query('SELECT * FROM TELEPHONES', (err, rows) => {
@@ -8,7 +21,7 @@ router.get('/', (req, res) => {
             console.log(err)
         }
         else{
-            console.log(rows)
+            res.send(rows)
         }
     })
 })
@@ -24,58 +37,112 @@ router.get('/:id', (req, res) => {
     })
 })
 
-/*router.get('/', (req,res,next) =>{
-    res.status(200).json({
-        message: 'Handling GET request to /telephones'
-    });
-});
 
-/*router.post('/', (req, res, next) => {
-   let telephone = req.body;
-    query = "Insert into telephones (PhoneId, PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?,?)";
-    database.query(query,[telephone.PhoneId, telephone.PhoneName, telephone.PhoneBrand, telephone.PhonePrice, telephone.PhoneDesc], (err, results) => {
-        if(!err){
-            return res.status(200),json({message: "Telephone Added Successfully"});
+
+router.post('/', (req, res, next) => {
+    const {error, value} = telephoneObject.validate(req.body)
+    if(error)
+    {
+       
+       // console.log(error);
+        res.send('Invalid Request. PhoneName or PhoneBrand missing');
+    }
+    else{
+        var tele = req.body
+        if(tele.PhoneDesc == 0)
+           {database.query('INSERT INTO telephones(PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?)', [tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
+            if(err){
+                console.log('Doar 3')
+                res.send(err)
+                console.log(err)
+            }
+            else{
+                if(rows.affectedRows == 1)
+                {
+                    res.send('Telephone added')
+                }
+                console.log('Telephone added')
+                
+            }
+           })
         }
-        else
-          return res.status(500).json(err);
+    else {
+        database.query('INSERT INTO telephones(PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?)', [tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
+            if(err){
+                res.send(err)
+                console.log(err)
+            }
+            else{
+                if(rows.affectedRows == 1)
+                {
+                    res.send('Telephone added')
+                }
+                console.log('Telephone added')
+                
+            }
+        })
+    }
+}
+    
+})
+
+router.patch('/', (req, res, next) =>{
+    var tele = req.body
+    database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            console.log('Telephone updated')
+            res.send(rows)
+        }
     });
 });
-*/
-router.post('/', (req,res,next) =>{
-   const telephone = {
-        name: req.body.name,
-        brand: req.body.brand,
-        price: req.body.price,
-        description: req.body.description
 
-    };
-    res.status(201).json({
-        message: 'Handling POST request to /telephones',
-        createdTelephone: telephone
+router.put('/', (req, res) => {
+    var tele = req.body
+    database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            if(rows.affectedRows == 0) {
+                database.query('INSERT INTO telephones(PhoneId, PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?,?)', [tele.PhoneId, tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
+                    if(err){
+                        console.log(err)
+                    }
+                    else{
+                        console.log('Telephone added')
+                        res.send(rows)
+                    }
+                })
+            }
+            else
+            {
+                console.log('Telephone updated')
+                res.send(rows)
+            }
+            
+        }
     });
-});
-
-
-/*router.get('/:telephoneId', (req, res, next) => {
-    const id = req.params.laptopId;
-    res.status(200).json({
-            message: 'You passed an telephone id',
-            id: id
-        });
-        
-});*/
-
-router.patch('/:telephoneId', (req, res, next) =>{
-    res.status(200).json({
-        message: 'Updated telephone!'
-    });
-});
+})
 
 router.delete('/:telephoneId', (req, res, next) => {
-      res.status(200).json({
-        message: 'Deleted telephone'
-      });
+    database.query('DELETE FROM telephones where PhoneId=?', [req.params.telephoneId], (err, rows) => {
+        if(err){
+           
+            console.log(err)
+        }
+        else{
+            if(rows.affectedRows == 0)
+                 res.send('The telephone with id ' + req.params.telephoneId + ' is not in database')
+            else {
+                console.log('The Telephone was deleted')
+                res.send(rows)
+            }
+            
+        }
+    })
 });
 
 module.exports = router;

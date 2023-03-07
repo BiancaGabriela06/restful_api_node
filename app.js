@@ -1,11 +1,12 @@
 const express = require('express');
 const app = express();
 const database = require('./database')
+const joi = require('joi');
 
 const morgan = require('morgan');
-const bodyParser = require('body-parser');
-
 app.use(morgan('dev'));
+
+const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({extended : false}));
 app.use(bodyParser.json());
 
