@@ -37,14 +37,36 @@ router.get('/:id', (req, res) => {
     })
 })
 
+router.get('/search/phonename/:name', (req,res) => {
+      let phoneName = req.params.name
+      database.query('SELECT * FROM telephones WHERE PhoneName Like ?',[phoneName], (err, rows) => {
+        if(err){
+            console.log(err)
+        }
+        else{
+            res.send(rows)
+        }
+      })
+})
+
+router.get('/search/phonebrand/:brand', (req,res) => {
+    let phoneBrand = req.params.brand
+    database.query('SELECT * FROM telephones WHERE PhoneBrand Like ?',[phoneBrand], (err, rows) => {
+      if(err){
+          console.log(err)
+      }
+      else{
+          res.send(rows)
+      }
+    })
+})
 
 
 router.post('/', (req, res, next) => {
     const {error, value} = telephoneObject.validate(req.body)
     if(error)
     {
-       
-       // console.log(error);
+        console.log(error);
         res.send('Invalid Request. PhoneName or PhoneBrand missing');
     }
     else{
