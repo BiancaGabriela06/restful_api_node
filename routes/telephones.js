@@ -9,10 +9,19 @@ router.use(bodyParser.json());
 
 const telephoneObject = joi.object(
     {
-        PhoneName: joi.required(),
-        PhoneBrand: joi.required(),
+        PhoneName: joi.string().required(),
+        PhoneBrand: joi.string().required(),
         PhonePrice: joi.required(),
-        PhoneDesc: joi.optional()
+        PhoneDesc: joi.string().optional()
+});
+
+const telephoneObjectUpdate = joi.object(
+    {
+        PhoneId: joi.required(),
+        PhoneName: joi.string().required(),
+        PhoneBrand: joi.string().required(),
+        PhonePrice: joi.required(),
+        PhoneDesc: joi.string().optional()
 });
 
 router.get('/', (req, res) => {
@@ -23,7 +32,8 @@ router.get('/', (req, res) => {
         else{
             res.send(rows)
         }
-    })
+    }) 
+    
 })
 
 router.get('/:id', (req, res) => {
@@ -74,7 +84,6 @@ router.post('/', (req, res, next) => {
         if(tele.PhoneDesc == 0)
            {database.query('INSERT INTO telephones(PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?)', [tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
             if(err){
-                console.log('Doar 3')
                 res.send(err)
                 console.log(err)
             }
@@ -109,44 +118,69 @@ router.post('/', (req, res, next) => {
 })
 
 router.patch('/', (req, res, next) =>{
-    var tele = req.body
-    database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
+    const {error, value} = telephoneObjectUpdate.validate(req.body)
+    if(error)
+    {
+        console.log(error);
+        res.send('Invalid Request. PhoneName or PhoneBrand missing');
+    }
+    else
+    {
+        const tele = req.body
+        database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
         if(err){
-            console.log(err)
-        }
-        else{
-            console.log('Telephone updated')
-            res.send(rows)
-        }
-    });
+                console.log(err)
+            }
+
+         else{
+                if(rows.affectedRows == 1)
+                      res.send('Telephone updated')
+                console.log('Telephone updated')
+            }
+        });
+    }
+    
 });
 
 router.put('/', (req, res) => {
-    var tele = req.body
-    database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
-        if(err){
-            console.log(err)
-        }
-        else{
-            if(rows.affectedRows == 0) {
-                database.query('INSERT INTO telephones(PhoneId, PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?,?)', [tele.PhoneId, tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
-                    if(err){
-                        console.log(err)
-                    }
-                    else{
-                        console.log('Telephone added')
-                        res.send(rows)
-                    }
-                })
+    const {error, value} = telephoneObjectUpdate.validate(req.body)
+    if(error)
+    {
+        console.log(error);
+        res.send('Invalid Request. PhoneName or PhoneBrand missing');
+    }
+    else
+    {
+        var tele = req.body
+        database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
+            if(err){
+                console.log(err)
             }
-            else
-            {
-                console.log('Telephone updated')
-                res.send(rows)
+            else{
+                if(rows.affectedRows == 0) {
+                    database.query('INSERT INTO telephones(PhoneId, PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?,?)', [tele.PhoneId, tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
+                        if(err){
+                            console.log(err)
+                        }
+                        else{
+                            if(rows.affectedRows == 1)
+                                res.send('Telephone added')
+                            console.log('Telephone added')
+                        
+                        }
+                    })
+                }
+                else
+                {
+                    if(rows.affectedRows == 1)
+                        res.send('Telephone updated')
+                    console.log('Telephone updated')
+                }
+                
             }
-            
-        }
-    });
+        });
+    }
+   
 })
 
 router.delete('/:telephoneId', (req, res, next) => {
