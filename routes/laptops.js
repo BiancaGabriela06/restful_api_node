@@ -7,7 +7,8 @@ const joi = require('joi');
 router.use(bodyParser.urlencoded({extended : false}));
 router.use(bodyParser.json());
 
-const laptoplObject = joi.object(
+///Validare pentru Adaugare
+const laptopObject = joi.object(
     {
         LaptopName: joi.string().required(),
         LaptopBrand: joi.string().required(),
@@ -15,6 +16,7 @@ const laptoplObject = joi.object(
         LaptopDesc: joi.string().optional()
 });
 
+/// Validare pentru Update
 const laptopObjectUpdate = joi.object(
     {
         LaptopId: joi.required(),
@@ -25,51 +27,112 @@ const laptopObjectUpdate = joi.object(
 });
 
 router.get('/', (req, res) => {
-    database.query('SELECT * FROM LAPTOPS', (err, rows) => {
-        if(err){
-            console.log(err)
-        }
-        else{
-            res.send(rows)
-        }
-    }) 
+    var laptopId = req.query.laptopid;
+    var laptopName = req.query.laptopname;
+    var laptopBrand = req.query.laptopbrand;
+    var laptopPrice = req.query.laptopprice;
+    var sign = req.query.sign;
+
+    /// Daca nu avem niciun query, afisam toate laptopuri
+    if(laptopId == null && laptopName == null && laptopBrand == null && laptopPrice == null)
+    {
+        database.query('SELECT * FROM LAPTOPS', (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        }) 
+    }
+
+    ///Cautam dupa id unic
+    else if (laptopId != null && laptopName == null && laptopBrand == null && laptopPrice == null)
+    {
+        database.query('SELECT * FROM LAPTOPS Where LaptopId =? ', [laptopId], (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        }) 
+    }
+
+    ///Cautam dupa nume
+    else if (laptopId == null && laptopName != null && laptopBrand == null && laptopPrice == null)
+    {
+        database.query('SELECT * FROM LAPTOPS Where LaptopName like ? ', [laptopName], (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        }) 
+    }
+
+    ///Cautam dupa brand
+    else if(laptopId == null && laptopName == null && laptopBrand != null && laptopPrice == null)
+    {
+        database.query('SELECT * FROM LAPTOPS Where LaptopBrand like ? ', [laptopBrand], (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        }) 
+    }
+
+    ///Afisare laptopuri de la un brand X care au pretul mai mare/mai mic decat o valoare data
+    else if(laptopId == null && laptopName == null && laptopBrand != null && laptopPrice != null && sign!=null)
+    {
+        if(sign == '>') /// preturi mai mari
+            database.query('SELECT * FROM LAPTOPS WHERE LaptopBrand like ? and LaptopPrice >= ' + laptopPrice, [laptopBrand], (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        })
+
+        else if(sign == '<')
+        database.query('SELECT * FROM LAPTOPS WHERE LaptopBrand like ? and LaptopPrice <= ' + laptopPrice, [laptopBrand], (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        })
+    }
+    ///Afisam laptopurile care au pretul mai mic/mai mare decat o valoare data
+    else if(laptopId == null && laptopName == null && laptopBrand == null && laptopPrice != null && sign!=null){
+        if(sign == '>') /// preturi mai mari
+            database.query('SELECT * FROM LAPTOPS WHERE LaptopPrice >= ' + laptopPrice, (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+    })
+        else if(sign == '<')
+            database.query('SELECT * FROM LAPTOPS WHERE LaptopPrice <= ' + laptopPrice,  (err, rows) => {
+            if(err){
+                console.log(err)
+            }
+            else{
+                res.send(rows)
+            }
+        })
+    }
     
 })
 
-router.get('/:id', (req, res) => {
-    database.query('SELECT * FROM LAPTOPS WHERE LaptopId=?', [req.params.id], (err, rows) => {
-        if(err){
-            console.log(err)
-        }
-        else{
-            res.send(rows)
-        }
-    })
-})
 
-router.get('/search/laptopname/:name', (req,res) => {
-      let laptopName = req.params.name
-      database.query('SELECT * FROM laptops WHERE LaptopName Like ?',[laptopName], (err, rows) => {
-        if(err){
-            console.log(err)
-        }
-        else{
-            res.send(rows)
-        }
-      })
-})
-
-router.get('/search/laptopbrand/:brand', (req,res) => {
-    let phoneBrand = req.params.brand
-    database.query('SELECT * FROM laptops WHERE LaptopBrand Like ?',[laptopBrand], (err, rows) => {
-      if(err){
-          console.log(err)
-      }
-      else{
-          res.send(rows)
-      }
-    })
-})
 
 
 router.post('/', (req, res, next) => {
@@ -81,8 +144,9 @@ router.post('/', (req, res, next) => {
     }
     else{
         var laptop = req.body
-        if(laptop.PhoneDesc == 0)
-           {database.query('INSERT INTO laptops(LaptopName, LaptopBrand, LaptopPrice, LaptopDesc) values (?,?,?,?)', [laptop.LaptopName, laptop.LaptopBrand, laptop.LaptopPrice, laptop.LaptopDesc], (err, rows) => {
+        
+        database.query('INSERT INTO LAPTOPS (LaptopName, LaptopBrand, LaptopPrice, LaptopDesc) values (?,?,?,?)',
+        [laptop.LaptopName, laptop.LaptopBrand, laptop.LaptopPrice, laptop.LaptopDesc], (err, rows) => {
             if(err){
                 res.send(err)
                 console.log(err)
@@ -95,47 +159,30 @@ router.post('/', (req, res, next) => {
                 console.log('Laptop added')
                 
             }
-           })
-        }
-    else {
-        database.query('INSERT INTO laptops(PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?)', [tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
-            if(err){
-                res.send(err)
-                console.log(err)
-            }
-            else{
-                if(rows.affectedRows == 1)
-                {
-                    res.send('Telephone added')
-                }
-                console.log('Telephone added')
-                
-            }
         })
-    }
 }
     
 })
 
 router.patch('/', (req, res, next) =>{
-    const {error, value} = telephoneObjectUpdate.validate(req.body)
+    const {error, value} = laptopObjectUpdate.validate(req.body)
     if(error)
     {
         console.log(error);
-        res.send('Invalid Request. PhoneName or PhoneBrand missing');
+        res.send('Invalid Request. LaptopName or LaptopBrand missing');
     }
     else
     {
-        const tele = req.body
-        database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
+        const laptop = req.body
+        database.query('UPDATE laptops SET ? WHERE LaptopId = ' + laptop.LaptopId, [laptop], (err, rows) => {
         if(err){
                 console.log(err)
             }
 
          else{
                 if(rows.affectedRows == 1)
-                      res.send('Telephone updated')
-                console.log('Telephone updated')
+                      res.send('Laptop updated')
+                console.log('Laptop updated')
             }
         });
     }
@@ -143,29 +190,30 @@ router.patch('/', (req, res, next) =>{
 });
 
 router.put('/', (req, res) => {
-    const {error, value} = telephoneObjectUpdate.validate(req.body)
+    const {error, value} = laptopObjectUpdate.validate(req.body)
     if(error)
     {
         console.log(error);
-        res.send('Invalid Request. PhoneName or PhoneBrand missing');
+        res.send('Invalid Request. LaptopName or LaptopBrand missing');
     }
     else
     {
-        var tele = req.body
-        database.query('UPDATE telephones SET ? WHERE PhoneId = ' + tele.PhoneId, [tele], (err, rows) => {
+        var laptop = req.body
+        database.query('UPDATE laptops SET ? WHERE LaptopId = ' + laptop.LaptopId, [laptop], (err, rows) => {
             if(err){
                 console.log(err)
             }
             else{
                 if(rows.affectedRows == 0) {
-                    database.query('INSERT INTO telephones(PhoneId, PhoneName, PhoneBrand, PhonePrice, PhoneDesc) values (?,?,?,?,?)', [tele.PhoneId, tele.PhoneName, tele.PhoneBrand, tele.PhonePrice, tele.PhoneDesc], (err, rows) => {
+                    database.query('INSERT INTO laptops(LaptopId, LaptopName, LaptopBrand, LaptopPrice, LaptopDesc) values (?,?,?,?,?)',
+                     [laptop.LaptopId, laptop.LaptopName, laptop.LaptopBrand, laptop.LaptopPrice, laptop.LaptopDesc], (err, rows) => {
                         if(err){
                             console.log(err)
                         }
                         else{
                             if(rows.affectedRows == 1)
-                                res.send('Telephone added')
-                            console.log('Telephone added')
+                                res.send('Laptop added')
+                            console.log('Laptop added')
                         
                         }
                     })
@@ -173,8 +221,8 @@ router.put('/', (req, res) => {
                 else
                 {
                     if(rows.affectedRows == 1)
-                        res.send('Telephone updated')
-                    console.log('Telephone updated')
+                        res.send('Laptop updated')
+                    console.log('Laptop updated')
                 }
                 
             }
@@ -183,18 +231,19 @@ router.put('/', (req, res) => {
    
 })
 
-router.delete('/:telephoneId', (req, res, next) => {
-    database.query('DELETE FROM telephones where PhoneId=?', [req.params.telephoneId], (err, rows) => {
+router.delete('/:laptopId', (req, res, next) => {
+    database.query('DELETE FROM laptops where LaptopId=?', [req.params.laptopId], (err, rows) => {
         if(err){
-           
             console.log(err)
         }
         else{
             if(rows.affectedRows == 0)
-                 res.send('The telephone with id ' + req.params.telephoneId + ' is not in database')
+                 res.send('The laptop with id ' + req.params.laptopId + ' is not in database')
             else {
-                console.log('The Telephone was deleted')
-                res.send(rows)
+                if(rows.affectedRows == 1)
+                   res.send('The laptop was deleted')
+                console.log('The laptop was deleted')
+               
             }
             
         }
