@@ -1,10 +1,14 @@
 const http = require('http');
 const app = require('./app');
+var fs = require('fs');
 
-const port = process.env.PORT || 2255;
+var configPath = './config.json'
+var parsed = JSON.parse(fs.readFileSync(configPath, 'UTF-8'));
+
+const port = process.env.PORT || parsed.port;
 
 const server = http.createServer(app);
 
 server.listen(port, () => {
-    console.log('Connected to port 2255');
+    console.log('Connected to port ' + parsed.port);
 });

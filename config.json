@@ -1,0 +1,10 @@
+{
+        "database": "apidb",
+        "host": "localhost",
+        "port": 2255,
+        "user": "root",
+        "password": "mysql123"
+
+}
+
+

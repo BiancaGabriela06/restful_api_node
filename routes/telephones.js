@@ -3,6 +3,7 @@ const router = express.Router();
 const database = require('../database');
 const bodyParser = require('body-parser');
 const joi = require('joi');
+const querystring = require('querystring');
 
 router.use(bodyParser.urlencoded({extended : false}));
 router.use(bodyParser.json());
@@ -26,114 +27,49 @@ const telephoneObjectUpdate = joi.object(
         PhoneDesc: joi.string().optional()
 });
 
-router.get('/', (req, res) => {
-    var phoneId = req.query.phoneid;
-    var phoneName = req.query.phonename;
-    var phoneBrand = req.query.phonebrand;
-    var phonePrice = req.query.phoneprice;
-    var sign = req.query.sign;
-
-    /// Daca nu avem niciun query, afisam toate telefoanele
-    if(phoneId == null && phoneName == null && phoneBrand == null && phonePrice == null)
-    {
-        database.query('SELECT * FROM TELEPHONES', (err, rows) => {
-            if(err){
-                console.log(err)
+router.get('/:telephoneId', (req, res) => {
+    database.query('SELECT * FROM telephones where PhoneId = ?', [req.params.telephoneId], (err, rows) => {
+        if(err){
+            res.send('The telephone with id ' + req.params.telephoneId + ' is not in database')
+        }
+        else{
+               res.send(rows)
             }
-            else{
-                res.send(rows)
-            }
-        }) 
-    }
-
-    ///Cautam dupa id unic
-    else if (phoneId != null && phoneName == null && phoneBrand == null && phonePrice == null)
-    {
-        database.query('SELECT * FROM TELEPHONES Where PhoneId =? ', [phoneId], (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
-        }) 
-    }
-
-    ///Cautam dupa nume
-    else if (phoneId == null && phoneName != null && phoneBrand == null && phonePrice == null)
-    {
-        database.query('SELECT * FROM TELEPHONES Where PhoneName like ? ', [phoneName], (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
-        }) 
-    }
-
-    ///Cautam dupa brand
-    else if(phoneId == null && phoneName == null && phoneBrand != null && phonePrice == null)
-    {
-        database.query('SELECT * FROM TELEPHONES Where PhoneBrand like ? ', [phoneBrand], (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
-        }) 
-    }
-
-    ///Afisare telefoane de la un brand X care au pretul mai mare/mai mic decat o valoare data
-    else if(phoneId == null && phoneName == null && phoneBrand != null && phonePrice != null && sign!=null)
-    {
-        if(sign == '>') /// preturi mai mari
-            database.query('SELECT * FROM TELEPHONES WHERE PhoneBrand like ? and PhonePrice >= ' + phonePrice, [phoneBrand], (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
+            
         })
-
-        else if(sign == '<')
-        database.query('SELECT * FROM TELEPHONES WHERE PhoneBrand like ? and PhonePrice <= ' + phonePrice, [phoneBrand], (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
-        })
-    }
-    ///Afisam telefoanele care au pretul mai mic/mai mare decat o valoare data
-    else if(phoneId == null && phoneName == null && phoneBrand == null && phonePrice != null && sign!=null){
-        if(sign == '>') /// preturi mai mari
-            database.query('SELECT * FROM TELEPHONES WHERE PhonePrice >= ' + phonePrice, (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
-    })
-        else if(sign == '<')
-            database.query('SELECT * FROM TELEPHONES WHERE PhonePrice <= ' + phonePrice,  (err, rows) => {
-            if(err){
-                console.log(err)
-            }
-            else{
-                res.send(rows)
-            }
-        })
-    }
-    
 })
 
+router.get('/', (req, res) => {
+    var where = 'WHERE 1=1 '
+    if(req.query.phonebrand != null)
+         where += 'AND PhoneBrand Like ' + req.query.phonebrand
+    if(req.query.phonename != null)
+         where += 'AND PhoneName Like ' + req.query.phonename
+    if(req.query.phonedesc != null)
+         where += 'AND PhoneDesc Like ' + req.query.phonedesc
+    if(req.query.phoneprice != null && req.query.sign == '>')
+         where += 'AND PhonePrice >= ' + req.query.phoneprice
+    if(req.query.phoneprice != null && req.query.sign == '<')
+         where += 'AND PhonePrice <= ' + req.query.phoneprice
+    if(req.query.phoneprice != null && req.query.sign == null)
+         where += 'AND  PhonePrice = ' + req.query.phoneprice
 
 
+    database.query('SELECT * FROM telephones ' + where, (err, rows) =>{
+          if(err){
+            console.log(err)
+            res.send('No response from database')
+          }
+              
+          else
+          {   if(rows == 0)
+                    res.send('Did not find what you were looking for')
+              else
+                  res.json({ entry : rows })
+              
+          }
+    })
+})
 
 router.post('/', (req, res, next) => {
     const {error, value} = telephoneObject.validate(req.body)

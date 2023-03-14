@@ -26,6 +26,20 @@ const laptopObjectUpdate = joi.object(
         LaptopDesc: joi.string().optional()
 });
 
+router.get('/:laptopId', (req, res) => {
+    database.query('SELECT FROM laptops where LaptopId=?', [req.params.laptopId], (err, rows) => {
+        if(err){
+            res.send('The laptop with id ' + req.laptopId + ' is not in database')
+        }
+        else{
+
+               res.send(res)
+            }
+            
+        })
+})
+
+
 router.get('/', (req, res) => {
     var laptopId = req.query.laptopid;
     var laptopName = req.query.laptopname;
